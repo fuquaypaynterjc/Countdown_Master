@@ -3,36 +3,47 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 
 
+
+
 @TeleOp(name="MRBDriveTest", group="Exercises")
 //@Disabled
 public class MRBDriveTest extends LinearOpMode {
-    DcMotor leftMotor, rightMotor ,  intakeMotor, shooterMotor ;
-    Servo doorServo, beaconServo;
-    ColorSensor beaconColor;
-    float leftY, rightY, linputY, rinputY;
-    String ProgramName, colorState;
-    double doorPosition, beaconPosition;
+    public float leftY, rightY;
+    public boolean liftDrive;
+    RobotCommon robot = new RobotCommon();
     Thread autoShoot = new AutoShoot();
+    //Robot robot = new Robot();
     // called when init button is  pressed.
+
+
+
+    /*public float slew(float StickValue)
+    {
+        float change = oldStick - StickValue;
+        if (StickValue == 0 && change == 0)
+            change = 0;
+        else if (change >= .1 && StickValue >= 0)f
+            change = (float) 0.1;
+        else if (change <= -.1 && StickValue <= 0)
+            change = (float) -0.1;
+        else
+            change = StickValue;
+        oldStick = change;
+        return change;
+    }
+    */
+
+
     @Override
     public void runOpMode() throws InterruptedException {
-        leftMotor = hardwareMap.dcMotor.get("left_motor");
-        rightMotor = hardwareMap.dcMotor.get("right_motor");
-        intakeMotor = hardwareMap.dcMotor.get("intake_motor");
-        shooterMotor = hardwareMap.dcMotor.get("shooter_motor");
-        doorServo = hardwareMap.servo.get("door_servo");
-        beaconServo = hardwareMap.servo.get("beacon_servo");
-        beaconColor = hardwareMap.colorSensor.get("beacon_color");
-        rightMotor.setDirection(DcMotor.Direction.REVERSE);
-        ProgramName = "MRB_11_17_16_2";
+        robot.intHardware(this);
         telemetry.addData("Mode", "waiting");
-        telemetry.addLine("ProgramName = " + ProgramName);
+        telemetry.addLine("ProgramName = " + robot.ProgramVersion);
         telemetry.update();
 
         // wait for start button.
@@ -40,84 +51,117 @@ public class MRBDriveTest extends LinearOpMode {
 
 
         //intakeMotor.setPower(0);
-
-
+        liftDrive = false;
+        robot.chooperClose();
+        robot.liftServoIn();
+        robot.intakeStop();
+        robot.ceaseFire();
+        leftY = 0;
+        rightY = 0;
+        robot.liftStop();
+        liftDrive = false;
         waitForStart();
         autoShoot.start();
-        doorServo.setPosition(0.5);
+        robot.chooperClose();
+        robot.liftServoIn();
+
+
+
 
         try {
-
-
             while (opModeIsActive()) {
                 //shooterMotor.setPower(0);
-
-
                 // Drive Code
                 leftY = gamepad1.left_stick_y;
                 rightY = gamepad1.right_stick_y;
-                //Stick Dead Zone
-                if (leftY <= .2 && leftY >= -0.2)
-                    linputY = 0;
-                else
-                    linputY = leftY;
+                robot.tankdrive(leftY, rightY, false);
+                // end drive Code
 
-                if (rightY <= .2 && rightY >= -.2)
-                    rinputY = 0;
-                else
-                    rinputY = rightY;
-/*
-            rinputY = rightY;
-            linputY = leftY;
-            // end drive Code
-*/
+
+
                 //Gamepad 1 Commands
                 if (gamepad1.dpad_up)
-                    intakeMotor.setPower(1);
+                    robot.intakeIn();
                 if (gamepad1.dpad_down)
-                    intakeMotor.setPower(-1);
+                    robot.intakeOut();
                 if (gamepad1.a)
-                    intakeMotor.setPower(0);
-
+                    robot.intakeStop();
                 if (gamepad1.y)
-                    shooterMotor.setPower(0);
+                    robot.ceaseFire();
 
+                if (gamepad1.b)
+                {
+                    liftDrive = !liftDrive;
+                    sleep(100);
+                }
+
+                if (gamepad1.left_bumper) {
+                    //liftServoIn();
+                }
+                if (gamepad1.right_bumper) {
+                    //liftServoOut();
+
+                }
                 // Gamepad 2 commands
                 if (gamepad2.a) {
-                    beaconPosition = -0.5;
+					/*
+                    beaconPosition = 0.5;
+                    beaconServo.setPosition(0.5);
+					 */
                 }
                 if (gamepad2.b) {
-                    beaconPosition = 0.6;
+                    robot.liftServoIn();
                 }
                 if (gamepad2.y) {
-                    beaconPosition = 1.0;
+					robot.liftServoOut();
+                }
+                if (gamepad2.x)
+                {
+
+                }
+                if (gamepad2.dpad_left)
+                {
+                    robot.intakeJog(this);
                 }
 
-                if (beaconColor.red() <= beaconColor.blue())
+                if (gamepad2.right_bumper)
                 {
-                    colorState = "Blue";
+                    robot.chooperClose();
                 }
-                else if(beaconColor.red() >= beaconColor.blue())
+                if (gamepad2.left_bumper)
                 {
-                    colorState = "Red";
+                    robot.chooperOpen();
                 }
-                else
+                if (gamepad2.dpad_up)
                 {
-                    colorState = "Blue";
-             }
-                doorServo.setPosition(doorPosition);
-                beaconServo.setPosition(beaconPosition);
+                    robot.liftUp();
+                }
+                if (gamepad2.dpad_down)
+                {
+                    robot.liftDown();
+                }
+                if (gamepad2.right_trigger > .5)
+                {
+                    robot.liftStop();
+                }
 
-                leftMotor.setPower(Range.clip(linputY, -1.0, 1.0));
-                rightMotor.setPower(Range.clip(rinputY, -1.0, 1.0));
 
                 telemetry.addData("Mode", "running");
-                telemetry.addLine("ProgramName = " + ProgramName);
+                telemetry.addLine(robot.ProgramVersion);
                 telemetry.addData("sticks", "  left=" + leftY + "  right=" + rightY);
-                telemetry.addData("output", "left=" + linputY + " right=" + rinputY);
-                telemetry.addData("intakeStructure", " shooter =" + shooterMotor.getPower() + " intake =" + intakeMotor.getPower());
-                telemetry.addData("DoorServo", " Door Position = " + doorServo.getPosition());
-                telemetry.addData("BeaconServo", " Beacon Position = " + beaconPosition);
+                telemetry.addData("DrivePower: ", "Left: " + robot.leftMotor.getPower() + "Right: " + robot.rightMotor.getPower());
+                telemetry.addData("shooterEncoder: ",robot.shooterMotor.getCurrentPosition());
+                if (liftDrive == false)
+                {
+                    telemetry.addLine("Normal Driving");
+                }
+                if (liftDrive == true) {
+                    telemetry.addLine("Lift Drive");
+                }
+                telemetry.addData("intakeStructure", " shooter =" + robot.shooterMotor.getPower() + " intake =" + robot.intakeMotor.getPower());
+                telemetry.addData("lift", robot.liftMotor1.getPower() + " , ", robot.liftMotor2.getPower());
+                telemetry.addData("DoorServo", " Door Position = " + robot.doorServo.getPosition());
+                //telemetry.addData("LiftServo: ", robot.liftServo.getPosition());
                 telemetry.update();
 
                 idle();
@@ -130,37 +174,38 @@ public class MRBDriveTest extends LinearOpMode {
 
     }
 
-public class AutoShoot extends Thread
-{
-    AutoShoot()
+    public class AutoShoot extends Thread
     {
-        this.setName("AutoShoot");
+        AutoShoot()
+        {
+            this.setName("AutoShoot");
 
-    }
-    @Override
-    public void run()
-    {
-        try {
-            while (!interrupted()) {
-                if (gamepad1.x) {
-                    doorServo.setPosition(0.1);
-                    doorPosition = 0.1;
-                    sleep(700);
-                    doorServo.setPosition(0.5);
-                    doorPosition = 0.5;
-                    sleep(200);
-                    shooterMotor.setPower(1);
-                    sleep(800);
-                    shooterMotor.setPower(0);
-                }
-                idle();
-            }
         }
-        catch (InterruptedException e) {}
+        @Override
+        public void run()
+        {
+            try {
+                while (!interrupted()) {
+                    if (gamepad1.x) {
+                        robot.chooperOpen();
+                        sleep(700);
+                        robot.chooperClose();
+                        sleep(200);
+                        robot.fire();
+                        robot.ceaseFire();
+                    }
+                    if (gamepad2.dpad_right)
+                    {
+                        robot.fire();
+                    }
 
+                    idle();
+                }
+            }
+            catch (InterruptedException e) {}
+
+        }
     }
 
 }
-
-        }
 
